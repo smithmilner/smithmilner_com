@@ -1,0 +1,13 @@
+; $Id: icontact_subscribe.info,v 1.1.4.2.2.2 2010/05/03 19:49:35 greenskin Exp $
+name = iContact Subscribe
+description = "Provides a block that allows users to subscribe to iContact lists."
+dependencies[] = icontact
+core = 6.x
+package = "iContact"
+
+; Information added by drupal.org packaging script on 2010-05-03
+version = "6.x-2.0-alpha2"
+core = "6.x"
+project = "icontact"
+datestamp = "1272924307"
+

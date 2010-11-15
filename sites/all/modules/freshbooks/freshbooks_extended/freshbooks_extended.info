@@ -1,0 +1,12 @@
+; $Id: freshbooks_extended.info,v 1.1 2010/06/01 21:15:13 guypaddock Exp $
+name = FreshBooks Extended API
+description = Extends the FreshBooks-PHP API to handle additional information supported in the newest revisions to the FreshBooks API.
+core = 6.x
+package = FreshBooks
+dependencies[] = freshbooks
+; Information added by drupal.org packaging script on 2010-06-01
+version = "6.x-2.0-beta1"
+core = "6.x"
+project = "freshbooks"
+datestamp = "1275431409"
+

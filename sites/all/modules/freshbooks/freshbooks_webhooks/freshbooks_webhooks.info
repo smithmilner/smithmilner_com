@@ -1,0 +1,13 @@
+; $Id: freshbooks_webhooks.info,v 1.1 2010/06/01 21:15:13 guypaddock Exp $
+name = FreshBooks Webhooks API
+description = Enables a Drupal site to receive and respond to notifications from FreshBooks callbacks. 
+core = 6.x
+package = FreshBooks
+dependencies[] = freshbooks
+dependencies[] = freshbooks_extended
+; Information added by drupal.org packaging script on 2010-06-01
+version = "6.x-2.0-beta1"
+core = "6.x"
+project = "freshbooks"
+datestamp = "1275431409"
+

@@ -1,0 +1,325 @@
+<?php
+// $Id: freshbooks.module,v 1.6 2010/06/01 21:15:13 guypaddock Exp $
+
+/**
+ * @file
+ *  The main functionality of the FreshBooks module.
+ *
+ * @author Guy Paddock (guy.paddock@redbottledesign.com)
+ */
+require_once('freshbooks.constants.inc');
+
+/**
+ * Implementation of hook_menu().
+ */
+function freshbooks_menu() {
+  $items = array();
+
+  $items[FRESHBOOKS_PATH_SETTINGS] = array(
+    'title'             => 'FreshBooks',
+    'description'       => 'Configure your site to integrate with FreshBooks.',
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('freshbooks_settings_form'),
+    'access arguments'  => array('administer freshbooks'),
+    'file'              => 'freshbooks.admin.inc',
+  );
+
+  $items[FRESHBOOKS_PATH_SETTINGS_TEST] = array(
+    'type'              => MENU_CALLBACK,
+    'title'             => 'FreshBooks Settings Test Callback',
+    'description'       => 'This callback is used by the settings page to test the settings the user has provided.',
+    'page callback'     => 'freshbooks_settings_test_callback',
+    'access arguments'  => array('administer freshbooks'),
+    'file'              => 'freshbooks.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_init().
+ *
+ * This loads FreshBooks so that it is ready for use later in the request.
+ */
+function freshbooks_init() {
+  $apiUrl   = variable_get(FRESHBOOKS_VAR_API_URL, NULL);
+  $apiToken = variable_get(FRESHBOOKS_VAR_TOKEN, NULL);
+
+  if (!empty($apiUrl) && !empty($apiToken)) {
+    _freshbooks_load($apiUrl, $apiToken);
+  }
+
+  if (freshbooks_is_loaded()) {
+    watchdog('freshbooks', 'FreshBooks library loaded successfully.', array(), WATCHDOG_DEBUG);
+  }
+  else {
+    watchdog('freshbooks', 'FreshBooks library did not load.', array(), WATCHDOG_DEBUG);
+  }
+}
+
+/**
+ * A convenience function for modules to be able to determine whether the FreshBooks API is loaded and ready to use
+ * or not.
+ *
+ * @param   $set
+ *          This parameter is used internally by the FreshBooks module to set the status that this function returns.
+ *          Do not provide a value for this parameter in calls from your own code.
+ *
+ * @return  TRUE if the FreshBooks API is loaded and ready for use; FALSE if the API is not loaded and should not
+ *          be used during the current request.
+ */
+function freshbooks_is_loaded($set = NULL) {
+  static $isLoaded = FALSE;
+
+  if ($set != NULL) {
+    $isLoaded = $set;
+  }
+
+  return $isLoaded;
+}
+
+/**
+ * Convenience function for FreshBooks-dependent modules to use to guard code that requires the FreshBooks library to
+ * be loaded and configured properly before continuing.
+ *
+ * If FreshBooks has not been initialized, the appropriate error message will be written to the watchdog log and
+ * FALSE will be returned.
+ *
+ * @return  TRUE if the FreshBooks library has been loaded and configured properly, and it is safe to use the FreshBooks
+ *          API; FALSE otherwise.
+ */
+function freshbooks_assert_loaded() {
+  static $errorRaised = FALSE;
+
+  if (!freshbooks_is_loaded()) {
+    if (!$errorRaised) {
+      watchdog(
+        'freshbooks',
+        'FreshBooks functionality is not available because the FreshBooks library has not been initialized. '.
+        'This usually indicates that the FreshBooks module has not been configured. Please check the !reports_page '.
+        'for any related errors.',
+        array(
+          '!reports_page' => l(t('status report page'), 'admin/reports/status'),
+        ),
+        WATCHDOG_CRITICAL);
+
+      $errorRaised = TRUE;
+    }
+
+    $isLoaded = FALSE;
+  }
+  else {
+    $isLoaded = TRUE;
+  }
+
+  return $isLoaded;
+}
+
+/**
+ * Utility function for looking-up a FreshBooks client by an e-mail address.
+ *
+ * @param   $email
+ *          The e-mail address of the client to look-up and return.
+ *
+ * @return  An instance of FreshBooks_Client or FreshBooks_Extended_Client (if freshbooks_extended is enabled) that
+ *          contains the information for the client with the specified e-mail address, or NULL if no such client could
+ *          be found.
+ */
+function freshbooks_get_client_by_email($email) {
+  $client = NULL;
+
+  if (!empty($email) && freshbooks_assert_loaded()) {
+    if (module_exists('freshbooks_extended')) {
+      $clientList = new FreshBooks_Extended_Client();
+    }
+    else {
+      $clientList = new FreshBooks_Client();
+    }
+
+    $results    = array();
+    $resultInfo = array();
+
+    $clientList->listing($results, $resultInfo, 1, 25, array('email' => $email));
+
+    if ($resultInfo['total'] != 0) {
+      $client = $results[0];
+    }
+  }
+
+  return $client;
+}
+
+/**
+ * Utility function for looking-up a FreshBooks client by user name.
+ *
+ * @param   $userName
+ *          The user name of the client to look-up and return.
+ *
+ * @return  An instance of FreshBooks_Client or FreshBooks_Extended_Client (if freshbooks_extended is enabled) that
+ *          contains the information for the client with the specified user name, or NULL if no such client could
+ *          be found.
+ */
+function freshbooks_get_client_by_user_name($userName) {
+  $client = NULL;
+
+  if (!empty($userName) && freshbooks_assert_loaded()) {
+    if (module_exists('freshbooks_extended')) {
+      $clientList = new FreshBooks_Extended_Client();
+    }
+    else {
+      $clientList = new FreshBooks_Client();
+    }
+
+    $results    = array();
+    $resultInfo = array();
+
+    $clientList->listing($results, $resultInfo, 1, 25, array('username' => $userName));
+
+    if ($resultInfo['total'] != 0) {
+      $client = $results[0];
+    }
+  }
+
+  return $client;
+}
+
+/**
+ * Utility function for looking-up all FreshBooks invoices associated with a particular subscription ID.
+ *
+ * @param   $recurringId
+ *          The subscription identifier.
+ *
+ * @return  An indexed array containing instances of FreshBooks_Invoice or FreshBooks_Extended_Invoice
+ *          (if freshbooks_extended is enabled) that contains the information for all invoices created for the
+ *          subscription with the specified identifier, or an empty array if no such invoices could be found.
+ */
+function freshbooks_get_all_invoices_for_subscription_id($recurringId) {
+  $results = array();
+
+  if (!empty($recurringId) && freshbooks_assert_loaded()) {
+    if (module_exists('freshbooks_extended')) {
+      $invoiceList = new FreshBooks_Extended_Invoice();
+    }
+    else {
+      $invoiceList = new FreshBooks_Invoice();
+    }
+
+    $results    = array();
+    $resultInfo = array();
+
+    $invoiceList->listing($results, $resultInfo, 1, 100, array('recurringId' => $recurringId));
+  }
+
+  return $results;
+}
+
+/**
+ * Utility function for looking-up the latest FreshBooks invoice for a subscription ID.
+ *
+ * @param   $recurringId
+ *          The subscription identifier.
+ *
+ * @return  An instance of FreshBooks_Invoice or FreshBooks_Extended_Invoice (if freshbooks_extended is enabled) that
+ *          contains the information for the latest invoice created for the subscription with the specified identifier,
+ *          or NULL if no such invoice could be found.
+ */
+function freshbooks_get_latest_invoice_for_subscription_id($recurringId) {
+  $invoice = NULL;
+
+  if (!empty($recurringId)) {
+    // Sorted by descending invoice ID
+    $allInvoices  = freshbooks_get_all_invoices_for_subscription_id($recurringId);
+
+    if (!empty($allInvoices)) {
+      $invoice = $allInvoices[0];
+    }
+  }
+
+  return $invoice;
+}
+
+/**
+ * Utility function for looking-up the payment for an invoice ID.
+ *
+ * @param   $invoiceId
+ *          The invoice identifier.
+ *
+ * @return  An instance of FreshBooks_Payment that contains the information for the payment that corresponds to the
+ *          invoice with the specified identifier, or NULL if no such payment could be found.
+ */
+function freshbooks_get_payment_for_invoice($invoiceId) {
+  $payment = NULL;
+
+  if (!empty($invoiceId)) {
+    $paymentLister = new FreshBooks_Payment();
+
+    $results    = array();
+    $resultInfo = array();
+
+    $paymentLister->listing($results, $resultInfo, 1, 25, array('invoiceId' => $invoice->invoiceId));
+
+    if ($resultInfo['total'] != 0) {
+      $payment = $results[0];
+    }
+  }
+
+  return $payment;
+}
+
+/**
+ * An internal function for loading and initializing the FreshBooks API using the specified API URL and API token.
+ *
+ * @param $apiUrl
+ *        The service URL for processing FreshBooks requests.
+ *
+ * @param $apiToken
+ *        The unique authentication token FreshBooks assigns for authenticating requests.
+ *
+ * @return  TRUE if the FreshBooks API has been successfully loaded.
+ */
+function _freshbooks_load($apiUrl, $apiToken) {
+  if (!freshbooks_is_loaded()) {
+    spl_autoload_register('_freshbooks_autoload');
+
+    // Manually load the class to determine if the FreshBooks PHP library is present.
+    if (_freshbooks_autoload("FreshBooks_HttpClient")) {
+      FreshBooks_HttpClient::init($apiUrl, $apiToken);
+
+      freshbooks_is_loaded(TRUE);
+    }
+  }
+
+  return freshbooks_is_loaded();
+}
+
+/**
+ * Class auto-loading callback, for loading FreshBooks classes as they are needed.
+ *
+ * @param   $class
+ *          The name of the class that needs to be loaded.
+ *
+ * @return  TRUE if the specified class was found and loaded successfully, FALSE otherwise.
+ */
+function _freshbooks_autoload($class) {
+  static $freshbooksPath;
+
+  $result = FALSE;
+
+  if (preg_match("/^" . FRESHBOOKS_CLASS_PREFIX . "(.*)$/", $class, $matches)) {
+    if (empty($freshbooksPath)) {
+      $freshbooksPath = libraries_get_path(FRESHBOOKS_LIBRARY_NAME);
+    }
+
+    // Any remaining underscores in the name denote folders (i.e. "Element_Interface" is in "Element/Interface.php")
+    $fileName = str_replace("_", "/", $matches[1]) . ".php";
+
+    if (file_exists("$freshbooksPath/$fileName")) {
+      // require() is safe because autoload wouldn't have been triggered if the file was already included.
+      require("$freshbooksPath/$fileName");
+
+      $result = TRUE;
+    }
+  }
+
+  return $result;
+}

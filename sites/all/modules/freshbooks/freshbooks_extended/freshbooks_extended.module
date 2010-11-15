@@ -1,0 +1,38 @@
+<?php
+// $Id: freshbooks_extended.module,v 1.1 2010/06/01 21:15:13 guypaddock Exp $
+/**
+ * @file
+ *  The main functionality of the FreshBooks Extended API module.
+ *
+ * @author Guy Paddock (guy.paddock@redbottledesign.com)
+ */
+
+  /**
+   * The prefix applied to all extended FreshBooks API classes. This is used by the auto-load callback to determine which
+   * classes need to be loaded out of this package.
+   *
+   * @var string
+   */
+  define("FRESHBOOKS_EXTENDED_CLASS_PREFIX", 'FreshBooks_Extended_');
+
+  function freshbooks_extended_init() {
+    spl_autoload_register('_freshbooks_extended_autoload');
+  }
+
+  /**
+   * Class auto-loading callback, for loading the extended FreshBooks classes as they are needed.
+   *
+   * @param   $class
+   *          The name of the class that needs to be loaded.
+   */
+  function _freshbooks_extended_autoload($class) {
+    if (preg_match("/^" . FRESHBOOKS_EXTENDED_CLASS_PREFIX . "(.*)$/", $class, $matches) && freshbooks_assert_loaded()) {
+      $extendedApiFolder  = dirname(__FILE__);
+      $fileName           = "Extended_" . $matches[1] . ".php";
+
+      if (file_exists("$extendedApiFolder/$fileName")) {
+        // require() is safe because autoload wouldn't have been triggered if the file was already included.
+        require("$extendedApiFolder/$fileName");
+      }
+    }
+  }

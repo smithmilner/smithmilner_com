@@ -1,0 +1,61 @@
+<?php
+// $Id: freshbooks.install,v 1.1 2010/06/01 21:15:13 guypaddock Exp $
+
+/**
+ * @file
+ *  The install and uninstall logic for the FreshBooks module.
+ *
+ * @author Guy Paddock (guy.paddock@redbottledesign.com)
+ */
+require_once('freshbooks.constants.inc');
+
+/**
+ * Implementation of hook_requirements().
+ *
+ * Makes sure that the FreshBooks-PHP library is installed properly, and that the user has configured the API URL
+ * and token.
+ */
+function freshbooks_requirements($phase) {
+  $requirements   = array();
+  $t              = get_t();
+
+  $freshbooksPath = libraries_get_path(FRESHBOOKS_LIBRARY_NAME);
+
+  if (!is_dir($freshbooksPath)) {
+    $requirements['freshbooks_library'] = array(
+      'title'       => $t('FreshBooks-PHP library'),
+      'value'       => ($phase == 'install') ? '' : $t('Not installed'),  // During install, version number only
+      'severity'    => REQUIREMENT_ERROR,
+      'description' =>
+        $t('The FreshBooks-PHP library needs to be installed. Please see the <a href="@url">FreshBooks module '.
+           'documentation</a> for information on how to correct this.',
+
+           // TODO: Update documentation URL
+           array('@url' => 'http://www.drupal.org/project/freshbooks/')),
+    );
+  }
+
+  if ((variable_get(FRESHBOOKS_VAR_API_URL, NULL) == NULL) || (variable_get(FRESHBOOKS_VAR_TOKEN, NULL) == NULL)) {
+    $requirements['freshbooks_config'] = array(
+      'title'       => $t('FreshBooks configuration'),
+      'value'       => $t('Not configured properly'),
+      'severity'    => REQUIREMENT_WARNING,
+      'description' =>
+        $t('The FreshBooks module requires the FreshBooks API URL and authorization token to be provided. Please '.
+           'visit the !configPage to correct this.',
+           array('!configPage' => l('FreshBooks settings page', FRESHBOOKS_PATH_SETTINGS))),
+    );
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implementation of hook_uninstall().
+ *
+ * Cleans-up any settings variables that may have been set by the FreshBooks settings page.
+ */
+function freshbooks_uninstall() {
+  variable_del(FRESHBOOKS_VAR_API_URL);
+  variable_del(FRESHBOOKS_VAR_TOKEN);
+}

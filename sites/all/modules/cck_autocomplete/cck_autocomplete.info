@@ -1,0 +1,13 @@
+; $Id: cck_autocomplete.info,v 1.1 2009/01/25 19:53:21 archard Exp $
+
+name = Autocomplete
+description = Provides an autocomplete widget for CCK text fields.
+package = CCK
+core = 6.x
+dependencies[] = content
+; Information added by drupal.org packaging script on 2009-03-26
+version = "6.x-1.2"
+core = "6.x"
+project = "cck_autocomplete"
+datestamp = "1238101284"
+

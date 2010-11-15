@@ -1,0 +1,275 @@
+<?php
+// $Id: freshbooks_webhooks.module,v 1.1 2010/06/01 21:15:13 guypaddock Exp $
+/**
+ * @file
+ *  The main functionality of the FreshBooks Webhooks API module.
+ *
+ * @author Guy Paddock (guy.paddock@redbottledesign.com)
+ */
+require_once('freshbooks_webhooks.constants.inc');
+
+  /**
+   * Implementation of hook_menu().
+   */
+  function freshbooks_webhooks_menu() {
+    $items = array();
+
+    $items[FBWH_PATH_CALLBACK] = array(
+      'title'             => 'FreshBooks Webhooks callback',
+      'page callback'     => '_freshbooks_webhooks_dispatch_callback',
+      'access arguments'  => array('access content'),
+      'type'              => MENU_CALLBACK,
+    );
+
+    return $items;
+  }
+
+  /**
+   * A utility function for parsing the parameters provided in a FreshBooks callback and returning them in an
+   * associative array, with keys in the following pre-defined order:
+   *  - name      - The callback event name.
+   *  - system    - The login URI of the system that generated the event.
+   *  - object_id - An integer identifying the object being manipulated.
+   *  - user_id   - The id of the user who initiated the event.
+   *  - verifier  - A unique verification code (for callback.verify only).
+   *
+   * The resulting array should be safe to pass to call_user_func_array(), as parameters are guaranteed to appear
+   * in the order described above. If any of the above parameters are missing from the request, their value will be
+   * NULL in the resulting array.
+   *
+   * @return  An associative array containing the parameters from the request, in the order described above.
+   */
+  function freshbooks_webhooks_parse_callback_parameters() {
+    // List of expected POST values.
+    // Source: http://developers.freshbooks.com/api/webhooks/
+    $expectedParameterNames = array(
+      FBWH_PARAM_EVENT_NAME,
+      FBWH_PARAM_SYSTEM,
+      FBWH_PARAM_OBJECT_ID,
+      FBWH_PARAM_USER_ID,
+      FBWH_PARAM_VERIFIER,
+    );
+
+    $parameters = array();
+
+    /* Add all expected values from the POST to the parameter array, in the order defined above. This guarantees that
+     * the parameter order will always be the same if passed to hook functions, regardless of the order that values
+     * appear in the POST data.
+     */
+    foreach ($expectedParameterNames as $expectedParameter) {
+      if (isset($_POST[$expectedParameter])) {
+        $parameters[$expectedParameter] = $_POST[$expectedParameter];
+      }
+      else {
+        $parameters[$expectedParameter] = NULL;
+      }
+    }
+
+    return $parameters;
+  }
+
+  /**
+   * A utility function for verifying that an incoming FreshBooks callback is properly formed and comes from the
+   * trusted, expected FreshBooks site that the FreshBooks module is configured for.
+   *
+   * @return  <code>TRUE</code> if the incoming callback is valid and safe to process, or <code>FALSE</code> if should
+   *          be dropped without further processing.
+   */
+  function freshbooks_webhooks_callback_is_valid() {
+    $isValid = FALSE;
+
+    if (!_freshbooks_webhooks_is_post_back()) {
+      watchdog(
+        'freshbooks',
+        'A GET request for the FreshBooks callback URI is being ignored.',
+        array(),
+        WATCHDOG_DEBUG);
+    }
+    elseif (empty($_POST[FBWH_PARAM_EVENT_NAME])) {
+      watchdog(
+        'freshbooks',
+        'A FreshBooks callback was received, but no callback event name was provided.',
+        array(),
+        WATCHDOG_ERROR);
+    }
+    elseif (empty($_POST[FBWH_PARAM_SYSTEM])) {
+      watchdog(
+        'freshbooks',
+        'A FreshBooks callback for %event was received, but no system name was provided.',
+        array(
+          '%event' => $_POST[FBWH_PARAM_EVENT_NAME],
+        ),
+        WATCHDOG_ERROR);
+    }
+    elseif (!freshbooks_assert_loaded()) {
+      watchdog(
+        'freshbooks',
+        'A FreshBooks callback for %event was received but could not be processed because FreshBooks functionality is '.
+        'currently unavailable.',
+        array(
+          '%event' => $_POST[FBWH_PARAM_EVENT_NAME],
+        ),
+        WATCHDOG_CRITICAL);
+    }
+    else {
+      $remoteHostName   = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+      $safeDomainRegEx  = sprintf('/.%s$/', str_replace('.', '\.', FBWH_FB_SAFE_DOMAIN));
+
+      if (!preg_match($safeDomainRegEx, $remoteHostName)) {
+        watchdog(
+          'freshbooks',
+          'A FreshBooks callback for %event was received and dropped because it came from untrusted source host '.
+          'name %hostname.',
+          array(
+            '%event' => $_POST[FBWH_PARAM_EVENT_NAME],
+            '%hostname' => $remoteHostName,
+          ),
+          WATCHDOG_ERROR);
+      }
+      else {
+        $apiUrl       = variable_get(FRESHBOOKS_VAR_API_URL, NULL);
+        $expectedHost = parse_url($apiUrl, PHP_URL_HOST);
+        $actualHost   = parse_url($_POST[FBWH_PARAM_SYSTEM], PHP_URL_HOST);
+
+        if ($expectedHost != $actualHost) {
+          watchdog(
+            'freshbooks',
+            'A FreshBooks callback for %event was received and dropped because it came from the FreshBooks site '.
+            'at %source, but the FreshBooks module is configured for the FreshBooks site at %expected_source.',
+            array(
+              '%event'            => $_POST[FBWH_PARAM_EVENT_NAME],
+              '%source'           => $actualHost,
+              '%expected_source'  => $expectedHost,
+            ),
+            WATCHDOG_ERROR);
+        }
+        else {
+          // Finally, success!
+          $isValid = TRUE;
+        }
+      }
+    }
+
+    return $isValid;
+  }
+
+  /**
+   * Retrieves the callback(s) associated with the specified URI and/or event.
+   *
+   * @param   $uri
+   *          An optional parameter that specifies the callback URI to use as a result filter.
+   *
+   * @param   $event
+   *          An optional parameter that specifies the callback event to use as a result filter.
+   *
+   * @return  An array of FreshBooks_Extended_Callback instances that correspond to callbacks registered with the
+   *          FreshBooks site for the specified callback URI and/or event.
+   */
+  function freshbooks_webhooks_get_callbacks($uri = NULL, $event = NULL) {
+    $results  = array();
+
+    if (freshbooks_assert_loaded()) {
+      $callbackList = new FreshBooks_Extended_Callback();
+      $resultInfo   = array();
+
+      $callbackList->listing($results, $resultInfo, 1, 25, array('uri' => $uri, 'event' => $event));
+    }
+
+    return $results;
+  }
+
+  /**
+   * Implementation of hook_freshbooks_callback_callback_verify(), the FreshBooks callback for the
+   * <code>callback.verify</code> event.
+   *
+   * FreshBooks requires all callbacks to verify themselves before it will send them further event notifications, so
+   * this hook is implemented in the Webhooks module to do that automatically.
+   *
+   * @param $system
+   *        The address of the FreshBooks site that is providing the event notification.
+   *
+   * @param $callbackId
+   *        The numeric identifier for the callback that needs verification.
+   *
+   * @param $userId
+   *        The numeric identifier for the user who initiated the event.
+   *
+   * @param $verifier
+   *        A unique verification code that must be sent back to the FreshBooks site to verify the callback is
+   *        functioning.
+   */
+  function freshbooks_webhooks_freshbooks_callback_callback_verify($system, $callbackId, $userId, $verifier) {
+    $callbackVerifier = new FreshBooks_Extended_Callback();
+
+    $callbackVerifier->callbackId = $callbackId;
+    $callbackVerifier->verifier   = $verifier;
+
+    if ($callbackVerifier->verify()) {
+      watchdog(
+        'freshbooks',
+        'Successfully verified callback %id for user %user on %system.',
+        array(
+          '%id'     => $callbackId,
+          '%user'   => $userId,
+          '%system' => $system,
+        ),
+        WATCHDOG_INFO);
+    }
+    else {
+      watchdog(
+        'freshbooks',
+        'Failed to verify FreshBooks callback %id for user %user on %system (FreshBooks returned the message: %message).',
+        array(
+          '%id'       => $callbackId,
+          '%user'     => $userId,
+          '%system'   => $system,
+          '%message'  => $callbackVerifier->lastError,
+        ),
+        WATCHDOG_CRITICAL);
+    }
+  }
+
+  /**
+   * Menu callback that is invoked whenever the FreshBooks callback URI is requested.
+   *
+   * This function verifies that the callback is authentic, and dispatches its handling to any modules that implement
+   * FreshBooks Webhooks hook functions.
+   */
+  function _freshbooks_webhooks_dispatch_callback() {
+    if (freshbooks_webhooks_callback_is_valid()) {
+      // Parse the parameters from the request
+      $parameters = freshbooks_webhooks_parse_callback_parameters();
+
+      $eventName = $parameters[FBWH_PARAM_EVENT_NAME];
+
+      // BUGBUG: It may be bad to blindly trust the event name and use it as a function hook name.
+      $hookName   = 'freshbooks_callback_' . str_replace('.', '_', $eventName);
+
+      // Remove redundant event name from parameter list
+      unset($parameters[FBWH_PARAM_EVENT_NAME]);
+
+      // Make the first parameter to module_invoke_all() the name of the Drupal hook to fire
+      array_unshift($parameters, $hookName);
+
+      watchdog(
+        'freshbooks',
+        'Dispatching incoming FreshBooks callback for event %event_name to Webhooks modules.',
+        array(
+          '%event_name' => $eventName,
+        ),
+        WATCHDOG_INFO);
+
+      // Indirectly invoke module hooks with the hook name and parameters from the request
+      call_user_func_array('module_invoke_all', $parameters);
+    }
+  }
+
+  /**
+   * Utility function for determining if the current request is a post-back.
+   *
+   * @return  <code>TRUE</code if the current request is a post-back, <code>FALSE</code> if the request was submitted
+   *          via a different method (i.e. GET, PUT, etc).
+   */
+  function _freshbooks_webhooks_is_post_back() {
+    return ($_SERVER['REQUEST_METHOD'] == 'POST');
+  }

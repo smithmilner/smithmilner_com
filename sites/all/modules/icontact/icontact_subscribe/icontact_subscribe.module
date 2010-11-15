@@ -1,0 +1,343 @@
+<?php
+// $Id: icontact_subscribe.module,v 1.1.4.1.2.2 2010/05/03 19:49:35 greenskin Exp $
+
+/**
+ * @file
+ * Provides a block that allows users to subscribe to iContact lists.
+ *
+ * This module makes use of the iContact module's API to allow users methods to subscribe to iContact lists.
+ *
+ * @author greenSkin.
+ */
+
+/*******************************************************************************
+ * Hook Functions (Drupal)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_menu().
+ */
+function icontact_subscribe_menu() {
+  $items['admin/settings/icontact/subscribe'] = array(
+    'title' => 'Subscribe methods',
+    'description' => 'Settings for iContact subscribe.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('icontact_subscribe_admin_form'),
+    'access arguments' => array('administer iContact'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'icontact_subscribe.admin.inc'
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function icontact_subscribe_theme() {
+  return array(
+    'icontact_subscribe_block' => array(
+      'arguments' => array('data' => NULL)
+    ),
+    'icontact_subscribe_block_configure' => array(
+      'arguments' => array('form' => NULL)
+    )
+  );
+}
+
+/**
+ * Implementation of hook_block().
+ */
+function icontact_subscribe_block($op = 'list', $delta = 0, $edit = array()) {
+  switch ($op) {
+    case 'list':
+      $blocks = array();
+      foreach (variable_get('icontact_subscribe_enabled_blocks', array()) as $value) {
+        $blocks[$value['listId']]['info'] = t('@name subscribe', array('@name' => $value['name']));
+      }
+      return $blocks;
+    case 'configure':
+      $settings = variable_get('icontact_subscribe_block_settings_'. $delta, icontact_subscribe_block_defaults($delta));
+      return icontact_subscribe_block_configure($settings);
+    case 'save':
+      $settings = $edit['icontact_subscribe'];
+      $settings['listId'] = $delta;
+      variable_set('icontact_subscribe_block_settings_'. $delta, $settings);
+      return;
+    case 'view':
+      $block = array();
+      $enabled_blocks = variable_get('icontact_subscribe_enabled_blocks', array());
+      if (isset($enabled_blocks[$delta])) {
+        $settings = variable_get('icontact_subscribe_block_settings_'. $delta, icontact_subscribe_block_defaults($delta));
+        $block['subject'] = t('Subscribe to @name', array('@name' => $enabled_blocks[$delta]['name']));
+        $block['content'] = drupal_get_form('icontact_subscribe_form_'. $delta, $settings);
+      }
+      return $block;
+  }
+}
+
+/**
+ * Implementation of hook_forms().
+ */
+function icontact_subscribe_forms($form_id, $args) {
+  $forms = array();
+  if (substr($form_id, 0, 24) == 'icontact_subscribe_form_') {
+    $forms[$form_id] = array(
+      'callback' => 'icontact_subscribe_form',
+      'callback arguments' => $args
+    );
+  }
+  return $forms;
+}
+
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables
+ ******************************************************************************/
+
+function icontact_subscribe_block_configure($settings) {
+  $form = array();
+  $form['icontact_subscribe'] = array(
+    '#tree' => TRUE,
+    '#theme' => 'icontact_subscribe_block_configure'
+  );
+  // MESSAGES
+  $form['icontact_subscribe']['messages'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Messages'),
+    '#description' => t('Set iContact subscribe messages.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE
+  );
+  $form['icontact_subscribe']['messages']['main'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Main Message'),
+    '#description' => t('The initial message.'),
+    '#default_value' => $settings['messages']['main']
+  );
+  $form['icontact_subscribe']['messages']['subscribe'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Subscribe Message'),
+    '#description' => t('The message when a user successfully signs up for the E-Newsletter.'),
+    '#default_value' => $settings['messages']['subscribe']
+  );
+  $form['icontact_subscribe']['messages']['update'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Update Message'),
+    '#description' => t('The message when a user successfully updates their contact information.'),
+    '#default_value' => $settings['messages']['update']
+  );
+  $form['icontact_subscribe']['messages']['error'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Error Message'),
+    '#description' => t('Message when an error is returned via the iContact API.'),
+    '#default_value' => $settings['messages']['error']
+  );
+  $form['icontact_subscribe']['fields'] = array();
+  $fields = icontact_subscribe_field_name();
+  foreach ($fields as $field => $title) {
+    $form['icontact_subscribe']['fields'][$field] = array('#weight' => $settings['fields'][$field]['weight'], '#description' => '');
+    $form['icontact_subscribe']['fields'][$field]['enabled'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $settings['fields'][$field]['enabled']
+    );
+    $form['icontact_subscribe']['fields'][$field]['required'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $settings['fields'][$field]['required']
+    );
+    $form['icontact_subscribe']['fields'][$field]['weight'] = array(
+      '#type' => 'weight',
+      '#default_value' => $settings['fields'][$field]['weight'],
+      '#delta' => 10,
+      '#attributes' => array('class' => 'icontact-subscribe-field-weight')
+    );
+  }
+
+  // Sort fields by their weight.
+  uasort($form['icontact_subscribe']['fields'], 'element_sort');
+
+  // Email field is required.
+  // Disable email field settings and add info to the fieldset description.
+  $form['icontact_subscribe']['fields']['email']['#description'] .= ' '. t('This field is required by iContact.');
+  $form['icontact_subscribe']['fields']['email']['enabled']['#disabled'] = TRUE;
+  $form['icontact_subscribe']['fields']['email']['required']['#disabled'] = TRUE;
+  return $form;
+}
+
+function icontact_subscribe_form($form_state, $settings) {
+  $form = array('fields' => array('#tree' => TRUE));
+  foreach ($settings['fields'] as $field => $value) {
+    if ($value['enabled']) {
+      $form['fields'][$field] = array(
+        '#type' => 'textfield',
+        '#title' => icontact_subscribe_field_name($field),
+        '#size' => 25,
+        '#maxlength' => 32,
+        '#required' => $value['required'],
+        '#weight' => $value['weight']
+      );
+    }
+  }
+
+  if (isset($form['fields']['prefix'])) {
+    $form['fields']['prefix']['#size'] = 5;
+    $form['fields']['prefix']['#maxlength'] = 10;
+  }
+  if (isset($form['fields']['suffix'])) {
+    $form['fields']['suffix']['#size'] = 5;
+    $form['fields']['suffix']['#maxlength'] = 10;
+  }
+  if (isset($form['fields']['email'])) {
+    $form['fields']['email']['#default_value'] = (isset($GLOBALS['user']->mail)) ? $GLOBALS['user']->mail : '';
+    $form['fields']['email']['#maxlength'] = 255;
+  }
+  if (isset($form['fields']['postalCode'])) {
+    $form['fields']['postalCode']['#size'] = 10;
+    $form['fields']['postalCode']['#maxlength'] = 10;
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+    '#weight' => 11
+  );
+  $form['#validate'][] = 'icontact_subscribe_form_validate';
+  $form['#submit'][] = 'icontact_subscribe_form_submit';
+
+  return $form;
+}
+
+function icontact_subscribe_form_validate($form, &$form_state) {
+  if (!valid_email_address($form_state['values']['fields']['email'])) {
+    form_set_error('fields][email', t('Please enter a valid email address.'));
+  }
+}
+
+function icontact_subscribe_form_submit($form, &$form_state) {
+  $icontact = icontact_load();
+  $email = $form_state['values']['fields']['email'];
+  $settings = $form['#parameters'][2];
+  $listId = $settings['listId'];
+
+  $enabled_blocks = variable_get('icontact_subscribe_enabled_blocks', array());
+  $account_id = $enabled_blocks[$listId]['accountId'];
+  $clientfolder_id = $enabled_blocks[$listId]['clientFolderId'];
+  if ($account = $icontact->getAccount($account_id)) {
+    if ($clientfolder = $account->getClientFolder($clientfolder_id)) {
+      if ($list = $clientfolder->getList($listId)) {
+        $contact = $clientfolder->getContact(array('email' => $email));
+
+        if (!$contact) {
+          // Contact doesn't exist, add new contact.
+          $contact = $clientfolder->initContact();
+          if ($contact->create($form_state['values']['fields'])) {
+            if ($contact->subscribe($listId)) {
+              drupal_set_message(check_plain($settings['messages']['main']));
+              return;
+            }
+          }
+        }
+        else {
+          // If contact information has changed, update it.
+          $data = $form_state['values']['fields'];
+          foreach ($data as $key => $field) {
+            if ($key != 'email' && $contact->$key == $field) {
+              unset($data[$key]);
+            }
+          }
+          if (!empty($data)) {
+            $contact->update($data);
+          }
+
+          if ($contact->subscribe($listId)) {
+            drupal_set_message(check_plain($settings['messages']['update']));
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  // The list was not found so contact was not subscribed to list.
+  drupal_set_message(check_plain($settings['messages']['error']), 'error');
+}
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+function icontact_subscribe_field_name($field = NULL) {
+  $fields = array(
+    'prefix' => t('Prefix'),
+    'firstName' => t('First name'),
+    'lastName' => t('Last name'),
+    'suffix' => t('Suffix'),
+    'business' => t('Business'),
+    'email' => t('Email'),
+    'phone' => t('Phone'),
+    'fax' => t('Fax'),
+    'street1' => t('Street 1'),
+    'street2' => t('Street 2'),
+    'city' => t('City'),
+    'state' => t('State'),
+    'postalCode' => t('Postal code')
+  );
+  if ($field != NULL) {
+    return $fields[$field];
+  }
+  return $fields;
+}
+
+function icontact_subscribe_block_defaults($listId) {
+  return array(
+    'listId' => $listId,
+    'messages' => array(
+      'main' => t('You have successfully signed up for our E-Newsletter.'),
+      'subscribe' => t('Subscribe for your free E-Newsletter to find out all the latest information about @name.', array('@name' => variable_get('site_name', ''))),
+      'update' => t('You have successfully updated your E-Newsletter contact information.'),
+      'error' => t('There was an error processing your request. Please try again later.')
+    ),
+    'fields' => array(
+      'email' => array('enabled' => 1, 'required' => 1, 'weight' => -10),
+      'prefix' => array('enabled' => 0, 'required' => 0, 'weight' => -9),
+      'firstName' => array('enabled' => 1, 'required' => 0, 'weight' => -8),
+      'lastName' => array('enabled' => 1, 'required' => 0, 'weight' => -7),
+      'suffix' => array('enabled' => 0, 'required' => 0, 'weight' => -6),
+      'business' => array('enabled' => 0, 'required' => 0, 'weight' => -5),
+      'phone' => array('enabled' => 0, 'required' => 0, 'weight' => -4),
+      'fax' => array('enabled' => 0, 'required' => 0, 'weight' => -3),
+      'street1' => array('enabled' => 0, 'required' => 0, 'weight' => -2),
+      'street2' => array('enabled' => 0, 'required' => 0, 'weight' => -1),
+      'city' => array('enabled' => 0, 'required' => 0, 'weight' => 0),
+      'state' => array('enabled' => 0, 'required' => 0, 'weight' => 1),
+      'postalCode' => array('enabled' => 0, 'required' => 0, 'weight' => 2)
+    )
+  );
+}
+
+/*******************************************************************************
+ * Theme Functions
+ ******************************************************************************/
+
+function theme_icontact_subscribe_block_configure($form) {
+  drupal_add_tabledrag('icontact-subscribe-fields-configure', 'order', 'sibling', 'icontact-subscribe-field-weight');
+
+  $headers = array(
+    t('Field'),
+    t('Enable'),
+    t('Require'),
+    t('Weight')
+  );
+  $rows = array();
+  foreach (element_children($form['fields']) as $field) {
+    $row = array(
+      array('data' => icontact_subscribe_field_name($field)),
+      array('data' => drupal_render($form['fields'][$field]['enabled'])),
+      array('data' => drupal_render($form['fields'][$field]['required'])),
+      array('data' => drupal_render($form['fields'][$field]['weight']))
+    );
+    $rows[] = array('data' => $row, 'class' => 'draggable');
+  }
+  $output = drupal_render($form['messages']);
+  $output .= theme('table', $headers, $rows, array('id' => 'icontact-subscribe-fields-configure'));
+  $output .= drupal_render($form);
+  return $output;
+}

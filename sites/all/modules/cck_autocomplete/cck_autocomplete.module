@@ -1,0 +1,266 @@
+<?php
+// $Id: cck_autocomplete.module,v 1.3 2009/03/26 20:56:51 archard Exp $
+
+/**
+ * @file
+ * Provides autocomplete widget for text fields.
+ * A lot of code borrowed from text.module
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function cck_autocomplete_menu() {
+	$items = array();
+	// I made the argument placeholders really long to avoid function naming conflicts
+	$items['cck_autocomplete/%cck_autocomplete_content_type/%cck_autocomplete_field_name'] = array(
+		'title' => 'CCK Autocomplete',
+		'page callback' => 'cck_autocomplete',
+		'page arguments' => array(1, 2),
+		'access arguments' => array('access content'),
+		'type' => MENU_CALLBACK
+	);
+	return $items;
+}
+
+/**
+ * Implementation of hook_elements().
+ */
+function cck_autocomplete_elements() {
+  return array(
+    'cck_autocomplete' => array(
+      '#input' => TRUE,
+      '#process' => array('cck_autocomplete_process')
+    ),
+  );
+}
+
+/**
+ * Process function for the cck_autocomplete element.
+ */
+function cck_autocomplete_process($element, $edit, $form_state, $form) {
+	// we're gonna dynamically generate the autocomplete path
+	// it will be based off the node type and the name of the field
+	$content_type = $element['#type_name'];
+	
+	$field_name = $element['#field_name'];
+	
+	$element['value'] = array(
+		'#type' => 'textfield',
+		'#autocomplete_path' => 'cck_autocomplete/' . $content_type . '/' . $field_name,
+		'#default_value' => isset($element['#value']['value']) ? $element['#value']['value'] : NULL,
+		
+		'#title' => $element['#title'],
+    '#description' => $element['#description'],
+    '#required' => $element['#required'],
+    '#field_name' => $element['#field_name'],
+    '#type_name' => $element['#type_name'],
+    '#delta' => $element['#delta'],
+    '#columns' => $element['#columns'],
+	);
+	
+  return $element;
+}
+
+/**
+ * Implementation of hook_widget().
+ */
+function cck_autocomplete_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  $element = array(
+    '#type' => $field['widget']['type'],
+    '#default_value' => isset($items[$delta]) ? $items[$delta] : '',
+  );
+  return $element;
+}
+
+/**
+ * Implementation of hook_widget_info().
+ */
+function cck_autocomplete_widget_info() {
+	return array(
+		'cck_autocomplete' => array(
+			'label' => t('Autocomplete'),
+			'field types' => array('text'),
+			'multiple values' => CONTENT_HANDLE_CORE,
+      'callbacks' => array(
+        'default value' => CONTENT_CALLBACK_DEFAULT,
+      )
+		)
+	);
+}
+
+/**
+ * Implementation of hook_widget_settings().
+ *
+ */
+function cck_autocomplete_widget_settings($op, $widget) {
+	switch ($op) {
+		case 'form':
+			$form = array();
+			$form['matching'] = array(
+				'#type' => 'radios',
+				'#title' => t('Autocomplete matching'),
+				'#description' => t('How should the widget match the text that was typed in?'),
+				'#options' => array(0 => t('Starts with'), 1 => t('Contains'), 2 => t('Ends with')),
+				'#default_value' => isset($widget['matching']) ? $widget['matching'] : 0
+			);
+			$form['num_results'] = array(
+				'#type' => 'textfield',
+				'#size' => 1,
+				'#title' => t('Number of results to return'),
+				'#description' => t('How many results should the widget return at once? Maximum is 50.'),
+				'#default_value' => isset($widget['num_results']) ? $widget['num_results'] : 10
+			);
+			
+			return $form;
+			break;
+		case 'validate':
+			if ($widget['num_results'] > 50 || $widget['num_results'] < 1) {
+				form_set_error('num_results', t('Number of results must be between 1 and 50, inclusively.'));
+			}
+			break;
+		case 'save':
+			return array('matching', 'num_results');
+			break;
+	}
+}
+
+/**
+ * Page callback for the autocomplete field.
+ */
+function cck_autocomplete($content_type, $field_name, $string = '') {
+	$matches = array();
+	
+	if ($string) {
+		// we need to decide what kind of table the field values are stored in
+		// first check content_node_field for the multiple value
+		// then check the content_node_field_instance for the number of records
+		// if multiple isn't 0, or if there are more than 1 records in
+		// in content_node_field_instance then the field has its own table
+		$sql = "SELECT multiple FROM {content_node_field} WHERE field_name = '%s'";
+		$multiple = db_result(db_query($sql, $field_name));
+		
+		$result = db_query("SELECT type_name, widget_settings FROM {content_node_field_instance} WHERE field_name = '%s'", $field_name);
+		$field_instances = array();
+		while ($data = db_fetch_object($result)) {
+			$field_instances[$data->type_name] = $data->widget_settings;
+		}
+		
+		// some customization of the query
+		$widget_settings = $field_instances[$content_type];
+		$widget_settings = unserialize($widget_settings);
+		
+		// decide how to match the string
+		if (isset($widget_settings['matching'])) {
+			switch ($widget_settings['matching']) {
+				case 0:
+					$matching = '%s%%';
+					break;
+				case 1:
+					$matching = '%%%s%%';
+					break;
+				case 2:
+					$matching = '%%%s';
+					break;
+			}
+		}
+		else {
+			$matching = '%s%%';
+		}
+		
+		// decide how many results to return
+		if (isset($widget_settings['num_results'])) {
+			$num_results = $widget_settings['num_results'];
+		}
+		else {
+			$num_results = 10;
+		}
+		
+		// decide which table to use
+		if (count($field_instances) > 1 || $multiple) {
+			// this field is stored in its own table because it either has multiple values
+			// or it shares its field with another content type
+			$table = 'content_' . $field_name;
+		}
+		else {
+			// this field is stored in a normal table
+			$table = 'content_type_' . $content_type;
+		}
+		
+		// run the query and return the matches
+		$result = db_query_range("SELECT %s_value AS field_value FROM {%s} WHERE LOWER(%s_value) LIKE LOWER('" . $matching . "')", $field_name, $table, $field_name, $string, 0, $num_results);
+		while ($field = db_fetch_object($result)) {
+      $matches[$field->field_value] = check_plain($field->field_value);
+    }
+	}
+	
+	drupal_json($matches);
+}
+
+/**
+ * Load function for content type.
+ *
+ * First check to see that the argument provided is a valid node type.
+ * Then check if the user has permission to either create or edit nodes of that type.
+ */
+function cck_autocomplete_content_type_load($type) {
+	$types = node_get_types();
+	if (isset($types[$type])) {
+		if (user_access('administer nodes')) {
+			return $type;
+		}
+		$create = user_access('create ' . $type . ' content');
+		$edit_any = user_access('edit any ' . $type . ' content');
+		$edit_own = user_access('edit own ' . $type . ' content');
+		if ($create || $edit_any || $edit_own) {
+			return $type;
+		}
+		return FALSE;
+	}
+	else {
+		return FALSE;
+	}
+}
+
+/**
+ * Load function for CCK field names.
+ * 
+ * First we're going to check that the argument provided is a valid CCK field.
+ * Then we're going to check if the content_permissions module is enabled
+ * so we can see if the user actually has access to this field.
+ */
+function cck_autocomplete_field_name_load($name) {
+	$fields = content_fields();
+	if (isset($fields[$name])) {
+		if (module_exists('content_permissions')) {
+			if (user_access('edit ' . $name)) {
+				return $name;
+			}
+			else {
+				return FALSE;
+			}
+		}
+		return $name;
+	}
+	return FALSE;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function cck_autocomplete_theme() {
+	return array(
+    'cck_autocomplete' => array(
+      'arguments' => array('element' => NULL),
+    )
+  );
+}
+
+/**
+ * Theme function for the autocomplete element.
+ * It's just going to return a themed textfield.
+ * But since we set the autocomplete path, it will render correctly.
+ */
+function theme_cck_autocomplete($element) {
+	return $element['#children'];
+}

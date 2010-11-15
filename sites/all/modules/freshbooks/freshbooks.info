@@ -1,0 +1,13 @@
+; $Id: freshbooks.info,v 1.2 2010/06/01 21:15:13 guypaddock Exp $
+name = FreshBooks API
+description = Exposes the FreshBooks PHP library by Milan Rukavina as a configurable Drupal module, allowing you integrate your site with the FreshBooks accounting application.
+core = 6.x
+php = 5.1
+package = FreshBooks
+dependencies[] = libraries
+; Information added by drupal.org packaging script on 2010-06-01
+version = "6.x-2.0-beta1"
+core = "6.x"
+project = "freshbooks"
+datestamp = "1275431409"
+

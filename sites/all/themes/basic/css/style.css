@@ -1,0 +1,349 @@
+/** Font styles
+---------------------------------*/
+body {
+	margin: 0;
+	font-size: 100%;/* Fixes exaggerated text resizing in IE6 and IE7 */
+	color:#333;
+}
+#page {
+	font-size: 0.8125em;/* 16px x .8125 = 13px */
+	line-height:1.5em;/* 14px x 1.5 = 21px */
+}
+body,caption,th,td,input,textarea,select,option,legend,fieldset {
+	font-family: helvetica,"Helvetica Neue",Arial,sans-serif;
+}
+/* Links */
+a:link,a:visited {
+	color: #C73214;
+	text-decoration: none;
+}
+#content a:link,#content a:visited {
+	font-weight: bold;
+	text-decoration: none;
+}
+a:hover,a:active {
+	color: #000000;
+	text-decoration: underline;
+}
+/* Titles */
+.title,
+.title a {
+	color:#222222;
+}
+.title a:hover {
+	color:#C73214;
+}
+h1,h2,h3,h4,h5,h6 {
+	line-height: 1.3em;
+}
+h1 {
+	font-size: 2.2em;
+	font-weight: normal;
+	padding: 0 0 0.5em;
+	margin: 0;
+}
+h2 {
+	font-size: 1.8em;
+	font-weight: normal;
+	margin-bottom: 0.75em;
+}
+h3 {
+	font-size: 1.4em;
+	margin-bottom: 1em;
+}
+h4 {
+	font-size: 1.2em;
+	margin-bottom: 1.25em;
+}
+h5 {
+	font-size: 1.1em;
+	font-weight: bold;
+	margin-bottom: 1.5em;
+}
+h6 {
+	font-size: 1em;
+	font-weight: bold;
+}
+#content-header h1.title {
+	text-align: center;
+}
+/* Paragraph Styles */
+p {
+	margin: 1em 0;
+}
+/* List Styles */
+ul,ol {
+	margin-left: 0;
+	padding-left: 2em;
+}
+/* Table Styles */
+table {
+	width: 99%;
+}
+tr.even td,tr.odd td {
+	padding: 10px 5px;
+}
+tr.odd {
+	background-color: #fff;
+}
+/* Code */
+pre,code,tt {
+	font: 1em 'andale mono','lucida console',monospace;
+	line-height: 1.5;
+}
+pre {
+	background-color: #efefef;
+	display: block;
+	padding: 5px;
+	margin: 5px 0;
+	border: 1px solid #aaa;
+}
+/* List Styles */
+ul {
+	list-style-type: disc;
+}
+ul ul {
+	list-style-type: circle;
+}
+ul ul ul {
+	list-style-type: square;
+}
+ul ul ul ul {
+	list-style-type: circle;
+}
+ol {
+	list-style-type: decimal;
+}
+ol ol {
+	list-style-type: lower-alpha;
+}
+ol ol ol {
+	list-style-type: decimal;
+}
+/* Abbreviation */
+abbr {
+	border-bottom: 1px dotted #666;
+	cursor: help;
+	white-space: nowrap;
+}
+/* UI improvments */
+#edit-title {
+	font-size: 24px;
+}
+#system-themes-form img {
+	width: 100px;
+}
+.form-item .description {
+	font-style: italic;
+	line-height: 1.2em;
+	font-size: 0.8em;
+	margin-top: 5px;
+	color: #777;
+}
+#edit-delete {
+	color: #c00;
+}
+/*
+---------------- Home Page ------------------- */
+.blog-entry h3.title a {
+	color: #222222;
+}
+.blog-entry h3.title a:hover {
+	color: #C73214;
+	text-decoration: none;
+}
+.blog-entry h3 {
+	margin-bottom: 5px;
+	font-size: 2em;
+}
+.blog-entry {
+	padding-bottom: 5px;
+	margin: 0 0 35px 0;
+}
+.submitted strong,
+strong .port-address-label {
+	color: #333333;
+}
+
+.blog-entry div.links,
+.portfolio-item div.links {
+	text-align: right;
+}
+/*
+---------------- Blog Content ------------------- */
+.blog-entry .content {
+	overflow:hidden;
+}
+.blog-entry .content img {
+	border:1px solid #000000;
+}
+.blog-entry .taxonomy {
+	width:380px;
+}
+.blog-entry div.links {
+	float:right;
+	width:300px;
+}
+.blog-entry div.links ul li,
+.blog-entry .taxonomy ul li {
+	margin:0;
+	padding:0;
+}
+.blog-entry div.links a,
+.blog-entry .taxonomy a {
+	padding:10px;
+	font-size:1.2em;
+	color:#aaa;
+}
+.blog-entry div.links a:hover,
+.blog-entry .taxonomy a:hover {
+	background-color:#eee;
+	color:#333;
+	padding-bottom:9px;
+}
+.blog-entry .portfolio-footer {
+	min-height:30px;
+}
+
+/*
+---------------- PORTFOLIO Page ------------------- */
+div.portfolio-item h2.title {
+	margin-bottom: 0;
+}
+.portfolio-item .taxonomy {
+	width:380px;
+}
+.portfolio-item div.links {
+	float:right;
+	width:300px;
+}
+.portfolio-item div.links ul li {
+	margin:0;
+	padding:0;
+}
+.portfolio-item div.links a {
+	padding:10px;
+	font-size:1.2em;
+	color:#aaa;
+}
+.portfolio-item div.links a:hover {
+	background-color:#eee;
+	color:#333;
+	padding-bottom:9px;
+}
+.node-type-portfolio-item .portfolio-item .portfolio-footer {
+	margin-top:30px;
+}
+.portfolio-item .portfolio-footer {
+	min-height:30px;
+}
+.view-Portfolio .views-row {
+	margin-top:20px;
+}
+/*
+---------------- Comments ------------------- */
+div.comment {
+	padding: 5px 15px 5px 60px;
+}
+div.comment h4 {
+	margin: 0;
+	border-bottom: 1px solid black;
+}
+/*
+---------------- Portfolio Item JS ------------------- */
+#slider {
+	width: 800px;
+	margin: 0 auto;
+	position: relative;
+	border: 10px solid #ccc;
+	background: #ffffff;
+}
+.scroll {
+	overflow: hidden;
+	width: 800px;
+	margin: 0 auto;
+	position: relative;
+}
+.scrollContainer {
+	position: relative;
+}
+.scrollContainer div.panel {
+	padding: 10px;
+	width: 274px;
+	height: 318px;
+}
+#left-shadow {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 12px;
+	bottom: 0;
+	background: url('images/port-slider/leftshadow.png') repeat-y;
+}
+#right-shadow {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 12px;
+	bottom: 0;
+	background: url('images/port-slider/rightshadow.png') repeat-y;
+}
+.inside {
+	padding: 10px;
+	border: 1px solid #999;
+}
+.inside img {
+	display: block;
+	border: 1px solid #666;
+	margin: 0 0 10px 0;
+	width: 250px;
+}
+.inside h3 {
+	font-weight: normal;
+	color: #111;
+	font-size: 16px;
+	margin: 0 0 8px 0;
+	text-align: center;
+}
+#slider .inside p {
+	font-size: 11px;
+	color: #333333;
+}
+#slider .scroll {
+	height: 400px;
+}
+#slider a {
+	color: #999;
+	text-decoration: none;
+	border-bottom: 1px dotted #ccc;
+}
+#slider a:hover {
+	border-bottom: 1px solid #999;
+}
+.scrollButtons {
+	position: absolute;
+	top: 127px;
+	cursor: pointer;
+}
+.scrollButtons.left {
+	left: -45px;
+	display: block;
+	height: 58px;
+	width: 45px;
+	background: transparent url('images/port-slider/leftarrow.png') no-repeat 0 0;
+	text-indent: -9999px;
+}
+.scrollButtons.right {
+	right: -45px;
+	display: block;
+	height: 58px;
+	width: 45px;
+	background: transparent url('images/port-slider/rightarrow.png') no-repeat 0 0;
+	text-indent: -9999px;
+}
+.hide {
+	display: none;
+}
+h3.port-image-header {
+	text-align: center;
+}

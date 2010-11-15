@@ -1,0 +1,57 @@
+<?php
+// $Id: icontact.install,v 1.1.4.1.2.4 2010/05/03 20:50:54 greenskin Exp $
+
+/**
+ * Implementation of hook_requirements().
+ */
+function icontact_requirements($phase) {
+  $requirements = array();
+
+  if ($phase == 'runtime') {
+    $icontact = icontact_load();
+    $icontact = FALSE;
+    $requirements['icontact'] = array(
+      'title' => t('iContact API')
+    );
+    if ($icontact && $icontact->checkLoggedIn()) {
+      $requirements['icontact']['value'] = t('Authenticated');
+      $requirements['icontact']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['icontact']['value'] = t('You are not logged in');
+      $requirements['icontact']['severity'] = REQUIREMENT_WARNING;
+      $requirements['icontact']['description'] = t('Go to !link to set log in credentials. To enable this application for your iContact account, go to !link2 and enter a password and the appropriate APP ID from below.<br />Live: %appid<br />Sandbox: %test_appid',
+        array('!link' => l(t('iContact API settings'), 'admin/icontact'), '!link2' => l(t('enable external login'), 'https://app.sandbox.icontact.com/icp/core/externallogin'), '%appid' => ICONTACT_APP_ID, '%test_appid' => ICONTACT_TEST_APP_ID));
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function icontact_schema() {
+  $schema = array();
+  $schema['cache_icontact'] = drupal_get_schema_unprocessed('system', 'cache');
+  return $schema;
+}
+
+/**
+ * Implementation of hook_instal().
+ */
+function icontact_install() {
+  drupal_install_schema('icontact');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function icontact_uninstall() {
+  drupal_uninstall_schema('icontact');
+
+  $variables = db_query("SELECT name FROM {variable} WHERE name LIKE 'icontact%%'");
+  while ($variable = db_fetch_object($variables)) {
+    variable_del($variable->name);
+  }
+}

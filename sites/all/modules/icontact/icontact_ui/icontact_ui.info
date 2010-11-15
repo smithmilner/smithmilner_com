@@ -1,0 +1,14 @@
+; $Id: icontact_ui.info,v 1.1.2.1 2010/04/26 06:45:20 greenskin Exp $
+name = iContact UI
+description = "Graphical interface for managing iContact data."
+dependencies[] = icontact
+core = 6.x
+php = 5.1
+package = "iContact"
+
+; Information added by drupal.org packaging script on 2010-05-03
+version = "6.x-2.0-alpha2"
+core = "6.x"
+project = "icontact"
+datestamp = "1272924307"
+

@@ -1,0 +1,253 @@
+<?php
+// $Id: icontact.module,v 1.1.4.4.2.19 2010/05/03 19:49:35 greenskin Exp $
+
+/**
+ * @file
+ * Provides an API for the iContact API.
+ *
+ * This module makes API methods for iContact available for other modules
+ * to utilize.
+ *
+ * @author greenSkin.
+ */
+
+define('ICONTACT_URL', 'https://app.icontact.com/icp');
+define('ICONTACT_TEST_URL', 'https://app.sandbox.icontact.com/icp');
+define('ICONTACT_APP_ID', '4AuXFcTZc6MSKIhekSCFJOAmJrnoYHWT');
+define('ICONTACT_TEST_APP_ID', 'aGhF9JgPtDvQqzCtgGMKfNprUNm5i7Dj');
+
+/*******************************************************************************
+ * Hook Functions (Drupal)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_help().
+ */
+function icontact_help($path, $arg) {
+  switch ($path) {
+    case 'admin/settings/icontact':
+      $output = '<p id="icontact-live-help">'. t('!link<br />App ID: @app_id', array('!link' => l(t('Enable application on Live iContact account.'), 'http://app.icontact.com/icp/core/externallogin'), '@app_id' => ICONTACT_APP_ID)) .'</p>';
+      $output .= '<p id="icontact-sandbox-help">'. t('!link<br />App ID: @app_id', array('!link' => l(t('Enable application on Sandbox iContact account.'), 'http://app.sandbox.icontact.com/icp/core/externallogin'), '@app_id' => ICONTACT_TEST_APP_ID)) .'</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function icontact_perm() {
+  return array('administer iContact');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function icontact_menu() {
+  $items = array();
+  $items['admin/settings/icontact'] = array(
+    'title' => 'iContact',
+    'description' => 'API settings for using the iContact api.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('icontact_api_settings'),
+    'access callback' => 'icontact_admin_perm',
+    'file' => 'icontact.admin.inc'
+  );
+  $items['admin/settings/icontact/api'] = array(
+    'title' => 'API settings',
+    'description' => 'API settings for using the iContact api.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('icontact_api_settings'),
+    'access callback' => 'icontact_admin_perm',
+    'file' => 'icontact.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK
+  );
+  $items['icontact/flush-cache'] = array(
+    'page callback' => 'icontact_flush_cache',
+    'access callback' => 'icontact_admin_perm',
+    'type' => MENU_CALLBACK,
+    'file' => 'icontact.admin.inc'
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ */
+function icontact_flush_caches() {
+  return array('cache_icontact');
+}
+
+/*******************************************************************************
+ * Hook Functions (Admin Menu)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_admin_menu().
+ */
+function icontact_admin_menu(&$deleted) {
+  $links = array();
+  $links[] = array(
+    'title' => 'iContact',
+    'path' => 'icontact/flush-cache',
+    'query' => 'destination',
+    'parent_path' => 'admin_menu/flush-cache'
+  );
+  return $links;
+}
+
+/*******************************************************************************
+ * Hook Functions (Autoload)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_autoload_info().
+ */
+function icontact_autoload_info() {
+  $path = drupal_get_path('module', 'icontact') .'/classes';
+  return array(
+    'iContact' => array(
+      'file' => 'iContact.class.inc',
+      'file path' => $path
+    ),
+    'iContactResource' => array(
+      'file' => 'iContactResource.class.inc',
+      'file path' => $path
+    ),
+    'iContactAccount' => array(
+      'file' => 'iContactAccount.class.inc',
+      'file path' => $path
+    ),
+    'iContactClientFolder' => array(
+      'file' => 'iContactClientFolder.class.inc',
+      'file path' => $path
+    ),
+    'iContactContact' => array(
+      'file' => 'iContactContact.class.inc',
+      'file path' => $path
+    ),
+    'iContactList' => array(
+      'file' => 'iContactList.class.inc',
+      'file path' => $path
+    ),
+    'iContactMessage' => array(
+      'file' => 'iContactMessage.class.inc',
+      'file path' => $path
+    ),
+    'iContactSubscription' => array(
+      'file' => 'iContactSubscription.class.inc',
+      'file path' => $path
+    ),
+    'iContactUser' => array(
+      'file' => 'iContactUser.class.inc',
+      'file path' => $path
+    )
+  );
+}
+
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables
+ ******************************************************************************/
+
+
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+function icontact_resource_list() {
+  return array(
+    'accounts' => t('Accounts'),
+    'campaigns' => t('Campaigns'),
+    'clientFolders' => t('Client folders'),
+    'contacts' => t('Contacts'),
+    'contactHistory' => t('Contact history'),
+    'customFields' => t('Custom fields'),
+    'lists' => t('Lists'),
+    'messageBounces' => t('Message bounces'),
+    'messageClicks' => t('Message clicks'),
+    'messageOpens' => t('Message opens'),
+    'messages' => t('Messages'),
+    'permissions' => t('Permissions'),
+    'segments' => t('Segments'),
+    'segmentCriteria' => t('Segment criteria'),
+    'sends' => t('Sends'),
+    'statistics' => t('Statistics'),
+    'subscriptions' => t('Subscriptions'),
+    'time' => t('Time'),
+    'uploads' => t('Uploads'),
+    'users' => t('Users')
+  );
+}
+
+function icontact_account_load($account_id) {
+  if ($icontact = icontact_load()) {
+    return $icontact->getAccount($account_id);
+  }
+  return FALSE;
+}
+
+function icontact_clientfolder_load($clientfolder_id, $account_id) {
+  if ($icontact = icontact_load()) {
+    if ($account = $icontact->getAccount($account_id)) {
+      return $account->getClientFolder($clientfolder_id);
+    }
+  }
+  return FALSE;
+}
+
+function icontact_contact_load($contact_id, $account_id, $clientfolder_id) {
+  if ($icontact = icontact_load()) {
+    if ($account = $icontact->getAccount($account_id)) {
+      if ($clientfolder = $account->getClientFolder($clientfolder_id)) {
+        return $clientfolder->getContact($contact_id);
+      }
+    }
+  }
+  return FALSE;
+}
+
+function icontact_list_load($list_id, $account_id, $clientfolder_id) {
+  if ($icontact = icontact_load()) {
+    if ($account = $icontact->getAccount($account_id)) {
+      if ($clientfolder = $account->getClientFolder($clientfolder_id)) {
+        return $clientfolder->getList($list_id);
+      }
+    }
+  }
+  return FALSE;
+}
+
+function icontact_message_load($message_id, $account_id, $clientfolder_id) {
+  if ($icontact = icontact_load()) {
+    if ($account = $icontact->getAccount($account_id)) {
+      if ($clientfolder = $account->getClientFolder($clientfolder_id)) {
+        return $clientfolder->getMessage($message_id);
+      }
+    }
+  }
+  return FALSE;
+}
+
+function icontact_load($refresh = FALSE) {
+  static $icontact = NULL;
+
+  if (is_object($icontact) && $refresh === FALSE) {
+    return $icontact;
+  }
+
+  $icontact = new iContact($refresh);
+  if ($icontact->checkLoggedIn()) {
+    return $icontact;
+  }
+  return FALSE;
+}
+
+function icontact_admin_perm($perm = NULL) {
+  if (user_access('administer iContact')) {
+    return TRUE;
+  }
+  if ($perm != NULL && user_access($perm)) {
+    return TRUE;
+  }
+  return FALSE;
+}

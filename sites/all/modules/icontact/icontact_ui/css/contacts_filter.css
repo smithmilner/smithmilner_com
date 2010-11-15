@@ -1,0 +1,9 @@
+/* $Id: contacts_filter.css,v 1.1.2.1 2010/04/26 06:45:21 greenskin Exp $ */
+
+#icontact-ui-contacts-filter-form dl.multiselect dd.a,
+#icontact-ui-contacts-filter-form dl.multiselect dd.a .form-item {
+  width: 12em;
+}
+#icontact-ui-contacts-filter-form dl.multiselect .form-item {
+  height: 2.25em;
+}

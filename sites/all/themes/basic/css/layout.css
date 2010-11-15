@@ -1,0 +1,399 @@
+@import url("jquery.lightbox-0.5.css");
+/** Layout
+---------------------------------
+*  Using a negative margin technique, adapted from ZEN. The page is loaded by this order:
+*  
+*  1. Header
+*  2. Content
+*  3. Navigation menus
+*  4. Sidebar Left
+*  5. Sideabr Right
+*	
+*/
+body {
+	background-color:#05AFEF;
+}
+
+
+/*
+------------ HEADER ------------- */
+#header {
+	height:420px;
+	background:#FFFFFF url('images/header.gif') repeat-x 0 0;
+}
+
+#header-center {
+	width:1100px;
+	margin:0 auto;
+	position:relative;
+	height:390px;
+}
+h1#site-name a {
+	display:block;
+	height:70px;
+	width:586px;
+	text-indent:-9999px;
+	background:transparent url('images/logo.png');
+	position:absolute;
+	bottom:40px;
+	left:20px;
+}
+.not-front #header {
+	height:160px;
+}
+.not-front #header-center {
+	height:130px;
+}
+/*
+------------ SEARCH FORM - in the header ------------- */
+#header #search-theme-form {
+	position:absolute;
+	right:20px;
+	bottom:10px;
+}
+#header #edit-search-theme-form-1-wrapper {
+	margin:0;
+	padding:0;
+	float:left;
+}
+#header #edit-search-theme-form-1 {
+	width:141px;
+	height:18px;
+	border:none;
+	background:transparent url('images/search-form.png') no-repeat 100% 0;
+	padding:6px 0 2px 10px;
+	font-size:13px;
+	color:#FFFFFF;
+}
+
+#header .form-submit {
+	height:26px;
+	width:48px;
+	border:none;
+	float:left;
+	background:transparent url('images/search-btn.png') no-repeat 0 0;
+	text-indent:-9999px;
+}
+
+#header .form-submit:hover {
+	background-position: 0 100%;
+	cursor: pointer;
+}
+
+#header #edit-search-theme-form-1:hover {
+	border: none;
+}
+
+
+/*
+------------ BREADCRUMBLINE ------------- */
+#bread-line {
+	background:url('images/breadcrumb-bg.png') repeat-x 0 0;
+	height:30px;
+}
+#bread-line-center .breadcrumb {
+	padding:6px;
+	width:1100px;
+	margin:0 auto;
+	color:#F76548;
+	font-weight:bold;
+}
+#bread-line-center .breadcrumb a {
+	color:#333;
+}
+#bread-line-center .breadcrumb a:hover {
+	color:#000;
+	text-decoration:none;
+}
+
+#main.clearfix {
+	display:inline;
+}
+/*
+------------ MAIN NAVIGATION ------------- */
+#main-navigation {
+	padding:5px 0 20px 0;
+	background-color:#FFFFFF;
+}
+#block-menu-menu-mainnavigation {
+	width:1100px;
+	margin:0 auto;
+}
+#block-menu-menu-mainnavigation .menu {
+	padding:0;
+}
+#block-menu-menu-mainnavigation .menu li {
+	list-style:none;
+	float:left;
+	padding:0;
+	margin:0 38px 0 0;
+}
+#block-menu-menu-mainnavigation .menu li.last {
+	margin:0;
+}
+#block-menu-menu-mainnavigation li a {
+	background:transparent url('images/main-navigation2.gif') no-repeat 0 0;
+	display:block;
+	height:47px;
+	text-indent:-9999px;
+}
+#block-menu-menu-mainnavigation li.blog a{width:141px;background-position:0 0;}
+#block-menu-menu-mainnavigation li.blog a:hover,
+#block-menu-menu-mainnavigation li.blog a.active{background-position:0 -47px;}
+#block-menu-menu-mainnavigation li.portfolio a{width:271px;background-position:-141px 0;}
+#block-menu-menu-mainnavigation li.portfolio a:hover,
+#block-menu-menu-mainnavigation li.portfolio a.active{background-position:-141px -47px;}
+#block-menu-menu-mainnavigation li.about_me a{width:262px;background-position:-412px 0;}
+#block-menu-menu-mainnavigation li.about_me a:hover,
+#block-menu-menu-mainnavigation li.about_me a.active{background-position:-412px -47px;}
+#block-menu-menu-mainnavigation li.contact_me a{width:312px;background-position:-674px 0;}
+#block-menu-menu-mainnavigation li.contact_me a:hover,
+#block-menu-menu-mainnavigation li.contact_me a.active{background-position:-674px -47px;}
+
+/*
+------------ Portfolio NAVIGATION ------------- */
+#portfolio-category-menu {
+	height: 60px;
+}
+#portfolio-category-menu #port-cats li {
+	float:left;
+	list-style-type:none;
+	margin:0 0 0 15px;
+}
+
+#portfolio-category-menu #port-cats li.first {
+	margin:0 0 0 0;
+}
+
+#port-cats li a {
+	display:block;
+	padding:17px 0;
+	text-align:center;
+	height:18px;
+	width:92px;
+	background:transparent url('images/port-cloud.png') no-repeat 0 0;
+	
+}
+
+#port-cats li a:hover {
+	background-position:0 -52px;
+}
+
+/*
+----------- Content Body ------------ */
+#page{background:#FFFFFF url('images/body-bottom.gif') repeat-x 0 100%;}
+#page-inner{background:transparent url('images/body-shot.gif') no-repeat 0 100%;}
+#content{min-height:480px;}
+
+
+
+/** Sidebars width
+---------------------------------
+*  Changing the width of the sidebars is dead easy, just change the
+*  values below corresponding to the sidebar you want to modify.
+*  Make sure you keep negative values as negative values.
+*  For example, if I want to increase the width of the left sidebar
+*  to 300px, I would have to change each '190' to '300'.
+*/
+
+.two-sidebars .center,
+.sidebar-left .center {
+  	margin-left: 190px;     /* LEFT value */
+}
+#sidebar-first {
+  	width: 190px;           /* LEFT value */
+	margin-right: -190px;    /* negative LEFT value */
+}
+.two-sidebars .center,
+.sidebar-right .center {
+  	margin-right: 200px;    /* RIGHT value */
+}
+#sidebar-second {
+  	width: 380px;           /* RIGHT value */
+}
+
+/** Columns inner
+---------------------------------
+*  You can change the padding inside the columns without changing the
+*  width of them by just usinbg the INNER div of each column
+*/
+
+.inner {                             
+	padding: 0px;                     
+}                                   
+
+/** Navigation styles
+---------------------------------
+*  The navigation is loaded after the content, so we need to make space
+*  for it, equal to its height, so if you change the height of the navigation,
+*  remember to adapt the margin top of the content and sidebars.
+*/
+
+.with-navigation #content,
+.with-navigation .sidebar {
+  	margin-top: 40px;        /* Navigation Height */
+}
+#navigation {
+  	height: 40px;            /* Navigation Height */
+}
+
+/** LAYOUT RULES
+---------------------------------
+*  do not change if you're not sure you know what you're doing
+*/
+
+#content {
+  	width: 100%;
+  	margin-right: -100%;
+  	padding: 0;
+}
+#content-inner {
+	width:1100px;
+	margin:0 auto;
+}
+.sidebar-right #content-sub {
+	width:700px;
+	float:left;
+}                            
+.sidebar {                          
+  	float: left;                       
+}                                   
+#sidebar-second {
+  	float: right;
+}
+#navigation {                        
+ 	float: left;                       
+ 	margin-left: 0;
+ 	margin-right: -100%;
+ 	padding: 0;
+ 	width: 100%;
+}
+
+/* header */
+
+#header #header-region {
+  	overflow: hidden;
+	height:420px;
+}
+
+/* footer */
+
+#footer {
+ 	 float: none;
+ 	 clear: both;
+	 margin-top:35px;
+	 background:url("images/breadcrumb-bg.png") repeat scroll 0 0 transparent;
+	 height:70px;
+	 padding:2px 0 12px;
+}
+#footer-inner {
+	width:1100px;
+	margin:0 auto;
+	text-align:center;
+}
+
+/* Layout Helpers */
+
+#header,
+#footer,
+#main #content .mission,
+#main #content .breadcrumb,
+#main #content .node {
+  	clear: both;
+}
+
+/*
+------------- Side Bar layout ----------------- */
+#sidebar-second {
+	text-align:center;
+}
+#sidebar-second div.block {
+	margin-bottom:30px;
+}
+.view-blog-categories {
+	text-align:left;
+}
+.view-blog-categories ul,
+.view-blog-categories ul li {
+	list-style-type:none;
+	margin:0;
+	padding:0;
+}
+.view-blog-categories .views-field-name a {
+	padding:10px 10px 10px 45px;
+	font-size:1.3em;
+	display:block;
+	width:325px;
+	color:#aaa;
+	border-bottom:1px solid #ddd;
+}
+.view-blog-categories .views-field-name a:hover,
+.view-blog-categories .views-field-name a.active{
+	background-color:#eee;
+	color:#333;
+}
+#block-block-3 {
+	height:35px;
+}
+#block-block-3 a {
+	display: block;
+	height: 36px;
+	width: 185px;
+	text-indent: -9999px;
+	background: transparent url('images/client-btn.png') no-repeat 0 -36px;
+	margin: 0 auto;
+}
+#block-block-3 a:hover {
+	background-position: 0 0;
+}
+#block-views-dbcf572c9e65d11ade0d75559d2f5bd7 h3.title {
+	display:block;
+	height:27px;
+	width:234px;
+	text-indent:-9999px;
+	background:transparent url('images/port-hdr-img-bg.png') no-repeat 0 0;
+	margin:0 auto 10px;
+}
+.view-Port-image-slideshow-sidebar .views-row {
+	display:inline-block;
+	background:transparent url('images/port-img-block-bg.png') no-repeat 0 0;
+	position:relative;
+	width:180px;
+	height:200px;
+}
+.view-Port-image-slideshow-sidebar .views-row img {
+	position:absolute;
+	top:10px;
+	left:11px;
+}
+
+.view-Port-image-slideshow-sidebar .views-row .views-field-title {
+	width:168px;
+	margin-top:160px;
+	font-family:"comic Sans MS";
+}
+
+/*
+------------ FRONT PAGE VIEW ----------------- */
+body.front .view-frontpage ul li.views-row {
+	margin-top: 20px;
+	list-style:none;
+}
+
+/*
+------------- Portfolio Item Page ------------- */
+.node-type-portfolio-item #content-sub {
+	padding-top: 10px;
+}
+
+/*
+---------------- ADMIN STUFF ------------------- */
+#views-ui-edit-view-form {
+	margin-top:10px;
+}
+#content-area input.form-submit {
+	padding:8px;
+}
+#tinymce {
+	background-color:#ffffff;
+}

@@ -1,0 +1,11 @@
+; $Id: noie6.info,v 1.1 2010/06/25 16:59:26 altrugon Exp $
+name = No IE6
+description = Stops Internet Explorer 6 users from visiting your site. Let your visitors know why they can't use IE6 in your website and why they should choose another browser.
+core = 6.x
+
+; Information added by drupal.org packaging script on 2010-06-28
+version = "6.x-1.1"
+core = "6.x"
+project = "noie6"
+datestamp = "1277745914"
+

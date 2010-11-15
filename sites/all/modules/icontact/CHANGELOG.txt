@@ -1,0 +1,46 @@
+// $Id: CHANGELOG.txt,v 1.1.2.23 2010/05/03 21:48:44 greenskin Exp $
+
+iContact x.x-x.x, xxxx-xx-xx
+----------------------------
+
+
+iContact 6.x-2.x, xxxx-xx-xx
+----------------------------
+
+
+iContact 6.x-2.0-ALPHA1, 2010-05-03
+----------------------------
+by greenSkin: Added description to admin password fields describing what 
+  password to use.
+by greenSkin: Removed submodules in favor of a generic UI module.
+by greenSkin: Moved help text for enabling application with iContact servers to 
+  proper path.
+by greenSkin: Lots of updates/fixes. Pretty much an entire revamp of how the 
+  classes work. The classes iContact, iContactResource, iContactAccount, and 
+  iContactClientFolder were updated. Rest to come later.
+by greenSkin: When getting resource and resource IDs, be more accepting to  
+  values that evaluate to NULL.
+by greenSkin: Updated the rest of the predefined classes to use the new methods.
+by greenSkin: Set method requestActions on iContactContact class to public.
+by greenSkin: Added CRUD methods to iContactContact class.
+by greenSkin: Contacts list page has been updated.
+by greenSkin: Updated contact history page to work with new class methods.
+by greenSkin: Updated breadcrumb paths.
+by greenSkin: Updated users page in the iContact UI.
+by greenSkin: Pages that list messages and lists now display properly.
+by greenSkin: Removed link to delete message because iContact does not support 
+  deleting a message. Edit page for message is not functional.
+by greenSkin: Contacts, lists, and messages manage pages offer two tabs now. The 
+  default is 'List', the second tab is 'Add'.
+by greenSkin: Updated iContactClientFolder class to define $this->contacts as an 
+  empty array only when it is set to NULL. This allows to new contacts to be 
+  added to the array without wiping out existing ones. Added a TODO note for 
+  when deleting a contact.
+by greenSkin: Added subscribe module. Updated subscription resource code to 
+  allow creating and updating subscriptions.
+by greenSkin: Updated status report message for when iContact is not 
+  authenticated.
+#783592 by wongo888: Perform check that $icontact is not FALSE before using 
+  method checkLoggedIn().
+by greenSkin: Removed _block_rehash() from API settings submit function.
+by greenSkin: Fixed caching of the iContact object when no username is set.

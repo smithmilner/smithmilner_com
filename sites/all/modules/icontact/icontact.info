@@ -1,0 +1,14 @@
+; $Id: icontact.info,v 1.1.4.2.2.4 2009/08/17 23:33:50 greenskin Exp $
+name = iContact API
+description = "Provides an API for modules to communicate with iContact service."
+dependencies[] = autoload
+core = 6.x
+php = 5.1
+package = "iContact"
+
+; Information added by drupal.org packaging script on 2010-05-03
+version = "6.x-2.0-alpha2"
+core = "6.x"
+project = "icontact"
+datestamp = "1272924307"
+

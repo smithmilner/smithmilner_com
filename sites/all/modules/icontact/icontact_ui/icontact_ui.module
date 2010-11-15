@@ -1,0 +1,124 @@
+<?php
+// $Id: icontact_ui.module,v 1.1.2.7 2010/05/03 19:49:35 greenskin Exp $
+
+/**
+ * @file
+ * Manage iContact.
+ *
+ * @author greenSkin.
+ */
+
+/*******************************************************************************
+ * Hook Functions (Drupal)
+ ******************************************************************************/
+
+/**
+ * Implementation of hook_perm().
+ */
+function icontact_ui_perm() {
+  return array(
+    'manage iContact accounts',
+    'manage iContact client folders',
+    'manage iContact users',
+    'manage iContact contacts',
+    'view iContact contact history',
+    'manage iContact lists',
+    'manage iContact subscriptions',
+    'manage iContact messages'
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function icontact_ui_menu() {
+  module_load_include('inc', 'icontact_ui', 'includes/icontact_ui.menu');
+
+  $items = array();
+  $resources = array('accounts', 'clientFolders', 'contacts', 'lists', 'messages', 'subscriptions', 'users');
+  $resources = array('accounts', 'clientFolders', 'users', 'contacts', 'lists', 'messages');
+  foreach ($resources as $type) {
+    $func = 'icontact_ui_'. $type .'_menu_items';
+    $items += $func();
+  }
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function icontact_ui_theme() {
+  return array(
+    'icontact_ui_accounts_list' => array(
+      'arguments' => array('icontact' => NULL)
+    ),
+    'icontact_ui_clientfolders_list' => array(
+      'arguments' => array('account' => NULL)
+    ),
+    'icontact_ui_users_list' => array(
+      'arguments' => array('account' => NULL)
+    ),
+    'icontact_ui_contacts_list' => array(
+      'arguments' => array('clientfolder' => NULL, 'contacts' => NULL)
+    ),
+    'icontact_ui_contacts_history' => array(
+      'arguments' => array('contact' => NULL, 'actions' => NULL)
+    ),
+    'icontact_ui_lists_list' => array(
+      'arguments' => array('clientfolder' => NULL)
+    ),
+    'icontact_ui_lists_view' => array(
+      'arguments' => array('list' => NULL, 'contacts' => NULL)
+    ),
+    'icontact_ui_messages_list' => array(
+      'arguments' => array('clientfolder' => NULL)
+    )
+  );
+}
+
+/*******************************************************************************
+ * Callback Functions, Forms, and Tables
+ ******************************************************************************/
+
+
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+function icontact_ui_breadcrumb($type = 'icontact', $args = array()) {
+  $crumbs = (isset($args['crumbs'])) ? $args['crumbs'] : array();
+  switch ($type) {
+    case 'icontact':
+      $breadcrumb = array(l(t('Home'), ''));
+      $breadcrumb[] = l(t('Administer'), 'admin');
+      $breadcrumb[] = l(t('iContact accounts'), 'admin/icontact/accounts');
+      $breadcrumb = array_merge($breadcrumb, $crumbs);
+      drupal_set_breadcrumb($breadcrumb);
+      break;
+    case 'account':
+      $crumbs = array_merge(array(l(t('Accounts'), 'admin/icontact/accounts/'. $args['accountId'])), $crumbs);
+      icontact_ui_breadcrumb('icontact', array('crumbs' => $crumbs));
+      break;
+    case 'clientFolder':
+      $crumbs = array_merge(array(l(t('Client folders'), 'admin/icontact/clientfolders/'. $args['accountId'])), $crumbs);
+      icontact_ui_breadcrumb('icontact', array('crumbs' => $crumbs));
+      break;
+    case 'contact':
+      $crumbs = array_merge(array(l(t('Contacts'), 'admin/icontact/contacts/'. $args['accountId'] .'/'. $args['clientFolderId'])), $crumbs);
+      icontact_ui_breadcrumb('clientFolder', array('accountId' => $args['accountId'], 'clientFolderId' => $args['clientFolderId'], 'crumbs' => $crumbs));
+      break;
+    case 'list':
+      $crumbs = array_merge(array(l(t('Lists'), 'admin/icontact/lists/'. $args['accountId'] .'/'. $args['clientFolderId'])), $crumbs);
+      icontact_ui_breadcrumb('clientFolder', array('accountId' => $args['accountId'], 'clientFolderId' => $args['clientFolderId'], 'crumbs' => $crumbs));
+      break;
+    case 'subscription':
+      $crumbs = array_merge(array(l(t('Subscriptions'), 'admin/icontact/subscriptions/'. $args['accountId'] .'/'. $args['clientFolderId'])), $crumbs);
+      icontact_ui_breadcrumb('clientFolder', array('accountId' => $args['accountId'], 'clientFolderId' => $args['clientFolderId'], 'crumbs' => $crumbs));
+      break;
+    case 'message':
+      $crumbs = array_merge(array(l(t('Messages'), 'admin/icontact/messages/'. $args['accountId'] .'/'. $args['clientFolderId'])), $crumbs);
+      icontact_ui_breadcrumb('clientFolder', array('accountId' => $args['accountId'], 'clientFolderId' => $args['clientFolderId'], 'crumbs' => $crumbs));
+      break;
+  }
+}
