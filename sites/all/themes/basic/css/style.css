@@ -143,12 +143,9 @@ abbr {
 #edit-delete {
 	color: #c00;
 }
-
-#edit-body-wrapper body {
-	background-color:transparent;
-}
 body.cke_show_borders {
 	padding:10px;
+	background-color:transparent;
 }
 /*
 ---------------- Home Page ------------------- */
