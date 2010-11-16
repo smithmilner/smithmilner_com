@@ -144,7 +144,7 @@ abbr {
 	color: #c00;
 }
 
-#node-form body {
+#edit-body-wrapper body {
 	background-color:transparent;
 }
 body.cke_show_borders {
