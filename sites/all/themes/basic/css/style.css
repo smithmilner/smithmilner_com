@@ -143,6 +143,13 @@ abbr {
 #edit-delete {
 	color: #c00;
 }
+
+#node-form body {
+	background-color:transparent;
+}
+body.cke_show_borders {
+	padding:10px;
+}
 /*
 ---------------- Home Page ------------------- */
 .blog-entry h3.title a {

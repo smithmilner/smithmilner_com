@@ -1,0 +1,3 @@
+#ignoring settings.php and the files directory
+sites/default/settings.php
+sites/default/files
